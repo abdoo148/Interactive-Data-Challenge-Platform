@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+  </style>
+</head>
+<body class="p-4">
+  <div class="text-center mb-6 border-b pb-4">
+    <h2 class="text-2xl font-black text-indigo-600 mb-1">Leaderboard</h2>
+    <p class="text-sm text-slate-500 font-bold">Live Updates 🔴</p>
+  </div>
+
+  <div id="loading" class="text-center py-10 text-slate-400 font-bold animate-pulse">
+    Syncing...
+  </div>
+
+  <div id="error-msg" class="text-center py-5 text-rose-500 font-bold hidden text-sm"></div>
+
+  <div id="leaderboard" class="space-y-3"></div>
+
+  <script>
+    function fetchLeaderboard() {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          const loadingEl = document.getElementById('loading');
+          if(loadingEl) loadingEl.style.display = 'none';
+          
+          const container = document.getElementById('leaderboard');
+          
+          try {
+            const parsedRes = JSON.parse(res);
+            
+            if(parsedRes.error) {
+                const errorDiv = document.getElementById('error-msg');
+                errorDiv.innerText = parsedRes.error;
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if(!parsedRes.data || parsedRes.data.length === 0) {
+              container.innerHTML = '<p class="text-center text-slate-400 mt-10">Waiting for participants...</p>';
+              return;
+            }
+
+            let html = '';
+            parsedRes.data.forEach((p, i) => {
+              let medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : ''));
+              html += `
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center transform transition-all hover:scale-105 mb-3">
+                  <div>
+                    <div class="font-bold text-slate-800 text-lg">${medal} ${p.name}</div>
+                    <div class="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded inline-block mt-1">${p.rank}</div>
+                  </div>
+                  <div class="text-right bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
+                    <div class="font-black text-indigo-600 text-lg">${p.score}</div>
+                  </div>
+                </div>
+              `;
+            });
+            container.innerHTML = html;
+          } catch(e) {
+             container.innerHTML = '<p class="text-center text-rose-500 mt-10">Error parsing data</p>';
+          }
+        })
+        .withFailureHandler(function(err) {
+            const errorDiv = document.getElementById('error-msg');
+            errorDiv.innerText = "Server connection error";
+            errorDiv.style.display = 'block';
+        })
+        .getLeaderboard();
+    }
+
+    // Auto Refresh
+    fetchLeaderboard();
+    setInterval(fetchLeaderboard, 5000);
+  </script>
+</body>
+</html>
