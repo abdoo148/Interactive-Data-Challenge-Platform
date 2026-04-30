@@ -1,112 +1,109 @@
-// 1. إنشاء قائمة المدرب داخل جوجل شيت عند فتح الملف
+// 1. Create Trainer Menu on Open
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('🏆 منصة تحدي البيانات')
-      .addItem('عرض لوحة الصدارة (المدرب)', 'showLeaderboardSidebar')
+  ui.createMenu('🏆 Data Challenge')
+      .addItem('Show Leaderboard (Trainer)', 'showLeaderboardSidebar')
       .addSeparator()
-      .addItem('تهيئة الجداول والإعدادات', 'setupDatabase')
+      .addItem('Setup Database & Settings', 'setupDatabase')
       .addToUi();
 }
 
-// 2. دالة عرض لوحة الصدارة في قائمة جانبية داخل الشيت
+// 2. Show Leaderboard Sidebar
 function showLeaderboardSidebar() {
   var html = HtmlService.createHtmlOutputFromFile('Sidebar')
-      .setTitle('لوحة تحكم المدرب المباشرة')
+      .setTitle('Live Trainer Dashboard')
       .setWidth(350);
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
-// 3. دالة عرض الواجهة الأساسية للمتدربين (Web App) مع معالجة الأخطاء
+// 3. Main Trainee Web App UI
 function doGet(e) {
   try {
     var template = HtmlService.createTemplateFromFile('index');
     template.role = (e && e.parameter && e.parameter.role) ? e.parameter.role : '';
 
     var htmlOutput = template.evaluate();
-    htmlOutput.setTitle('تحدي البيانات التفاعلي');
+    htmlOutput.setTitle('Interactive Data Challenge');
     htmlOutput.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     htmlOutput.addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
     return htmlOutput;
   } catch (err) {
-    return HtmlService.createHtmlOutput('<div dir="rtl" style="font-family:sans-serif; text-align:center; padding:50px;"><h1>⚠️ حدث خطأ في تحميل المنصة</h1><p>' + err.message + '</p></div>');
+    return HtmlService.createHtmlOutput('<div style="font-family:sans-serif; text-align:center; padding:50px;"><h1>⚠️ Error loading platform</h1><p>' + err.message + '</p></div>');
   }
 }
 
-// 4. دالة تهيئة الجداول والإعدادات الشاملة (تُنشئ الشيتات إذا لم تكن موجودة)
+// 4. Setup Database and Settings
 function setupDatabase() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // أ. نافذة الإعدادات
-  var settingsSheet = ss.getSheetByName('الإعدادات');
+  // A. Settings Sheet
+  var settingsSheet = ss.getSheetByName('Settings');
   if (!settingsSheet) {
-    settingsSheet = ss.insertSheet('الإعدادات');
+    settingsSheet = ss.insertSheet('Settings');
     var defaultSettings = [
-      ['اسم الإعداد', 'القيمة', 'ملاحظات (لا تقم بتعديل أسماء الإعدادات)'],
-      ['اللون الرئيسي (Theme Color)', '#0ea5e9', 'لون الأزرار والتوهج (مثل: #0ea5e9 أزرق)'],
-      ['لون الخلفية (Background)', '#0f172a', 'لون خلفية الشاشة (مثل: #0f172a كحلي غامق)'],
-      ['لون النص (Text Color)', '#f8fafc', 'لون النصوص العامة (مثل: #f8fafc أبيض)'],
-      ['خلفية أزرار الخيارات (Option BG)', '#1e293b', 'لون خلفية الإجابات'],
-      ['تأثير التحويم للخيارات (Option Hover)', '#312e81', 'اللون عند مرور الماوس على الإجابة'],
-      ['أسئلة التمهيد (JSON Format)', '[{"id":"q1","label":"المسمى الوظيفي؟","type":"text","required":true}]', 'مصفوفة أسئلة تظهر قبل التحدي'],
-      ['رتبة 1 (الخبراء)', 'مايسترو البيانات', 'اسم أعلى رتبة'],
-      ['نسبة رتبة 1', '0.85', 'يحصل عليها من يحقق 85% فأكثر'],
-      ['رتبة 2 (المحترفون)', 'نينجا الجداول', 'اسم الرتبة الثانية'],
-      ['نسبة رتبة 2', '0.65', 'يحصل عليها من يحقق 65% فأكثر'],
-      ['رتبة 3 (المتوسطون)', 'صائد الأرقام', 'اسم الرتبة الثالثة'],
-      ['نسبة رتبة 3', '0.40', 'يحصل عليها من يحقق 40% فأكثر'],
-      ['رتبة 4 (المبتدئون)', 'محتاج قهوة ومراجعة', 'أقل رتبة لمن لم يحقق النسب السابقة']
+      ['Setting Name', 'Value', 'Notes (Do not modify setting names)'],
+      ['Theme Color', '#0ea5e9', 'Main color for buttons/glow (e.g., #0ea5e9 Blue)'],
+      ['Background Color', '#0f172a', 'Main background color (e.g., #0f172a Dark Navy)'],
+      ['Text Color', '#f8fafc', 'General text color (e.g., #f8fafc White)'],
+      ['Option BG Color', '#1e293b', 'Background color for answers'],
+      ['Option Hover Color', '#312e81', 'Color on mouse hover'],
+      ['Pre-Quiz Questions (JSON)', '[{"id":"q1","label":"Job Title?","type":"text","required":true}]', 'Questions appearing before the challenge'],
+      ['Rank 1 (Experts)', 'Data Maestro', 'Highest Rank Name'],
+      ['Rank 1 %', '0.85', 'Requires 85% or more'],
+      ['Rank 2 (Pros)', 'Table Ninja', 'Second Rank Name'],
+      ['Rank 2 %', '0.65', 'Requires 65% or more'],
+      ['Rank 3 (Intermediates)', 'Number Hunter', 'Third Rank Name'],
+      ['Rank 3 %', '0.40', 'Requires 40% or more'],
+      ['Rank 4 (Beginners)', 'Needs Coffee', 'Lowest Rank Name']
     ];
-    // ضبط النطاق ليطابق 14 صفاً بشكل دقيق
     settingsSheet.getRange(1, 1, 14, 3).setValues(defaultSettings);
     settingsSheet.getRange('A1:C1').setFontWeight('bold').setBackground('#1e293b').setFontColor('white');
     settingsSheet.setColumnWidth(1, 200); settingsSheet.setColumnWidth(2, 200); settingsSheet.setColumnWidth(3, 400);
   }
 
-  // ب. نافذة الأسئلة
-  var questionsSheet = ss.getSheetByName('الأسئلة');
+  // B. Questions Sheet
+  var questionsSheet = ss.getSheetByName('Questions');
   if (!questionsSheet) {
-    questionsSheet = ss.insertSheet('الأسئلة');
-    var qHeaders = ['نوع السؤال', 'نص السؤال', 'الخيار 1', 'الخيار 2', 'الخيار 3', 'الخيار 4', 'الإجابة/الترتيب الصحيح', 'الوقت (ثواني)', 'النقاط'];
+    questionsSheet = ss.insertSheet('Questions');
+    var qHeaders = ['Type', 'Question Text', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Correct Answer/Order', 'Time (Seconds)', 'Points'];
     questionsSheet.appendRow(qHeaders);
     questionsSheet.getRange('A1:I1').setFontWeight('bold').setBackground('#1e293b').setFontColor('white');
 
     var sampleQuestions = [
-      ["single", "في جلسة أمس، ذكرنا أن 80% من بيانات المؤسسات تُصنف كـ:", "بيانات منظمة", "بيانات غير مهيكلة", "بيانات شبه مهيكلة", "بيانات مجمعة", "2", 15, 100],
-      ["multiple", "من أبعاد جودة البيانات (اختر كل ما يسبق):", "الاكتمال", "السرعة", "الدقة", "السعر", "1,3", 20, 150],
-      ["true_false", "دمج الخلايا (Merge Cells) ممارسة ممتازة لتنظيم قواعد البيانات.", "صح", "خطأ", "", "", "2", 10, 50],
-      ["order", "رتب المراحل التالية لدورة حياة البيانات بشكل صحيح:", "التحليل والاستخراج", "بناء لوحات القيادة", "جمع البيانات الخام", "تنظيف البيانات", "3,4,1,2", 30, 250]
+      ["single", "In yesterday's session, 80% of enterprise data was classified as:", "Structured Data", "Unstructured Data", "Semi-structured Data", "Aggregated Data", "2", 15, 100],
+      ["multiple", "Which of the following are dimensions of Data Quality? (Select all that apply)", "Completeness", "Speed", "Accuracy", "Price", "1,3", 20, 150],
+      ["true_false", "Merging Cells is an excellent practice for organizing databases.", "True", "False", "", "", "2", 10, 50],
+      ["order", "Order the following data lifecycle stages correctly:", "Analysis & Extraction", "Building Dashboards", "Raw Data Collection", "Data Cleaning", "3,4,1,2", 30, 250]
     ];
     questionsSheet.getRange(2, 1, 4, 9).setValues(sampleQuestions);
-
-    // إضافة ملاحظات للمدرب
-    questionsSheet.getRange("J1").setValue("ملاحظات: الأنواع هي (single, multiple, true_false, order). المتعدد والترتيب يُكتب بفاصلة (1,3,2).");
+    questionsSheet.getRange("J1").setValue("Note: Types are (single, multiple, true_false, order). For multiple & order, use commas (e.g. 1,3,2).");
     questionsSheet.getRange("J1").setFontColor("red");
   }
 
-  // ج. نافذة النتائج
-  var resultsSheet = ss.getSheetByName('النتائج');
+  // C. Results Sheet
+  var resultsSheet = ss.getSheetByName('Results');
   if (!resultsSheet) {
-    resultsSheet = ss.insertSheet('النتائج');
-    var rHeaders = ['التاريخ والوقت', 'اسم المتدرب', 'إجابات التمهيد', 'النقاط المكتسبة', 'أقصى درجة', 'الرتبة'];
+    resultsSheet = ss.insertSheet('Results');
+    var rHeaders = ['Timestamp', 'Trainee Name', 'Pre-Quiz Answers', 'Points Earned', 'Max Score', 'Rank'];
     resultsSheet.appendRow(rHeaders);
     resultsSheet.getRange('A1:F1').setFontWeight('bold').setBackground('#1e293b').setFontColor('white');
   }
 
-  SpreadsheetApp.getUi().alert('تم تهيئة الجداول والإعدادات بنجاح!');
+  SpreadsheetApp.getUi().alert('Database and Settings successfully initialized!');
 }
 
-// 5. دالة جلب البيانات لتشغيل واجهة المتدرب (API)
+// 5. Fetch API Data
 function getAppConfig() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (!ss) throw new Error("الملف غير متصل بشكل صحيح بالسكريبت.");
+    if (!ss) throw new Error("File is not properly connected to the script.");
 
-    if (!ss.getSheetByName('الإعدادات') || !ss.getSheetByName('الأسئلة')) { 
+    if (!ss.getSheetByName('Settings') || !ss.getSheetByName('Questions')) { 
       setupDatabase(); 
     }
 
-    var settingsSheet = ss.getSheetByName('الإعدادات');
-    if (!settingsSheet) throw new Error("شيت الإعدادات غير موجود أو محذوف.");
+    var settingsSheet = ss.getSheetByName('Settings');
+    if (!settingsSheet) throw new Error("Settings sheet is missing or deleted.");
     
     var settingsData = settingsSheet.getRange(2, 1, 13, 2).getValues();
 
@@ -129,15 +126,15 @@ function getAppConfig() {
       optionHover: settingsData[4][1] || '#312e81',
       preQuizQuestions: preQuizData,
       ranks: [
-        { title: settingsData[6][1] || 'رتبة 1', min: isNaN(r1Min) ? 0.85 : r1Min, level: 1 },
-        { title: settingsData[8][1] || 'رتبة 2', min: isNaN(r2Min) ? 0.65 : r2Min, level: 2 },
-        { title: settingsData[10][1] || 'رتبة 3', min: isNaN(r3Min) ? 0.40 : r3Min, level: 3 },
-        { title: settingsData[12][1] || 'رتبة 4', min: 0, level: 4 }
+        { title: settingsData[6][1] || 'Rank 1', min: isNaN(r1Min) ? 0.85 : r1Min, level: 1 },
+        { title: settingsData[8][1] || 'Rank 2', min: isNaN(r2Min) ? 0.65 : r2Min, level: 2 },
+        { title: settingsData[10][1] || 'Rank 3', min: isNaN(r3Min) ? 0.40 : r3Min, level: 3 },
+        { title: settingsData[12][1] || 'Rank 4', min: 0, level: 4 }
       ]
     };
 
-    var questionsSheet = ss.getSheetByName('الأسئلة');
-    if (!questionsSheet) throw new Error("شيت الأسئلة غير موجود أو محذوف.");
+    var questionsSheet = ss.getSheetByName('Questions');
+    if (!questionsSheet) throw new Error("Questions sheet is missing or deleted.");
 
     var qData = questionsSheet.getDataRange().getValues();
     var questions = [];
@@ -168,8 +165,8 @@ function getAppConfig() {
         };
 
         if(type === 'true_false') {
-          qObj.options.push({ text: isValidOption(qData[i][2]) ? String(qData[i][2]) : "صح", id: 1 });
-          qObj.options.push({ text: isValidOption(qData[i][3]) ? String(qData[i][3]) : "خطأ", id: 2 });
+          qObj.options.push({ text: isValidOption(qData[i][2]) ? String(qData[i][2]) : "True", id: 1 });
+          qObj.options.push({ text: isValidOption(qData[i][3]) ? String(qData[i][3]) : "False", id: 2 });
         } else {
           if(isValidOption(qData[i][2])) qObj.options.push({ text: String(qData[i][2]), id: 1 });
           if(isValidOption(qData[i][3])) qObj.options.push({ text: String(qData[i][3]), id: 2 });
@@ -183,20 +180,20 @@ function getAppConfig() {
     config.totalMaxScore = totalMaxScore;
     return JSON.stringify({ config: config, questions: questions });
   } catch (error) {
-    throw new Error("فشل في معالجة إعدادات التطبيق: " + error.message);
+    throw new Error("Failed to process app config: " + error.message);
   }
 }
 
-// 6. تسجيل نتيجة المتدرب بطريقة آمنة للتزامن (Concurrency Safe)
+// 6. Submit Participant Result (Concurrency Safe)
 function submitParticipantResult(dataStr) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000); 
 
     var data = JSON.parse(dataStr);
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('النتائج');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Results');
     
-    if (!sheet) throw new Error("شيت النتائج غير متوفر لتسجيل الإجابات.");
+    if (!sheet) throw new Error("Results sheet is not available.");
 
     var preQuizAnswersStr = JSON.stringify(data.preQuiz || {});
 
@@ -217,17 +214,17 @@ function submitParticipantResult(dataStr) {
   }
 }
 
-// 7. جلب لوحة الصدارة للقائمة الجانبية للمدرب بشكل آمن
+// 7. Get Leaderboard Data for Sidebar
 function getLeaderboard() {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('النتائج');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Results');
     if(!sheet) return JSON.stringify({ data: [] });
     
     var data = sheet.getDataRange().getValues();
     var leaderboard = [];
 
     for(var i = 1; i < data.length; i++) {
-      if (data[i][1]) { // حماية من الصفوف الفارغة بالكامل
+      if (data[i][1]) {
         leaderboard.push({
           name: String(data[i][1]), 
           score: parseInt(data[i][3]) || 0, 
@@ -237,8 +234,6 @@ function getLeaderboard() {
       }
     }
     leaderboard.sort(function(a, b) { return b.score - a.score; });
-    
-    // تم التعديل هنا لترجع البيانات داخل أوبجكت اسمه data لتتطابق مع كود القائمة الجانبية
     return JSON.stringify({ data: leaderboard }); 
   } catch (e) {
     return JSON.stringify({ data: [], error: e.message }); 
