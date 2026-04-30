@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Data Challenge | Trainee Platform</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script>window.INITIAL_ROLE = "<?= typeof role !== 'undefined' ? role : '' ?>";</script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');
+    
+    :root {
+      var(--bg-main): #0f172a;
+      var(--text-main): #f8fafc;
+      var(--theme-color): #4f46e5;
+      var(--option-bg): #1e293b;
+      var(--option-hover): #3730a3;
+      var(--option-text): #e2e8f0;
+    }
+
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background-color: var(--bg-main, #0f172a); 
+      color: var(--text-main, #f8fafc); 
+      margin: 0; 
+      padding: 0; 
+      transition: background-color 0.5s ease;
+    }
+    
+    @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-2px); } 50% { transform: translateX(2px); } 75% { transform: translateX(-2px); } 100% { transform: translateX(0); } }
+    
+    .animate-zoom { animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    .animate-slide { animation: slideUp 0.4s ease-out forwards; }
+    .animate-shake { animation: shake 0.2s infinite; }
+    
+    .option-btn {
+      background-color: var(--option-bg, #1e293b);
+      color: var(--option-text, #e2e8f0);
+      border-color: rgba(255,255,255,0.1);
+    }
+    .option-btn:hover:not(:disabled) {
+      background-color: var(--option-hover, #3730a3);
+      border-color: var(--theme-color, #4f46e5);
+      color: #ffffff;
+    }
+    .option-btn.selected {
+      background-color: var(--theme-color, #4f46e5);
+      border-color: var(--theme-color, #4f46e5);
+      color: #ffffff;
+      box-shadow: 0 10px 25px -5px var(--theme-color, #4f46e5);
+    }
+
+    * { -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--theme-color, #4f46e5); border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: 'Inter', sans-serif;">
+      <div style="width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+      <h2 style="font-size: 22px; font-weight: 800; margin: 0 0 8px 0;">Initializing Platform...</h2>
+      <p style="opacity: 0.7; font-size: 15px;">Gathering data and custom themes</p>
+    </div>
+    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+  </div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    class ErrorBoundary extends React.Component {
+      constructor(props) { super(props); this.state = { hasError: false, errorMsg: '' }; }
+      static getDerivedStateFromError(error) { return { hasError: true, errorMsg: error.toString() }; }
+      componentDidCatch(error, errorInfo) { console.error("React Error:", error); }
+      render() {
+        if (this.state.hasError) {
+          return (
+            <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+              <div className="bg-rose-500/10 border border-rose-500 p-8 rounded-3xl max-w-lg shadow-2xl">
+                <h1 className="text-3xl font-black text-rose-500 mb-4">Technical Error</h1>
+                <p className="opacity-80 mb-8 text-sm">{this.state.errorMsg}</p>
+                <button onClick={() => window.location.reload()} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-xl transition-all">Refresh Page</button>
+              </div>
+            </div>
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+    const playTickSound = (isAlarm) => {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const audioCtx = new AudioContext();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = isAlarm ? 'sawtooth' : 'square';
+        oscillator.frequency.setValueAtTime(isAlarm ? 1200 : 880, audioCtx.currentTime); 
+        oscillator.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (isAlarm ? 0.05 : 0.1));
+
+        gainNode.gain.setValueAtTime(isAlarm ? 0.2 : 0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (isAlarm ? 0.05 : 0.1));
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+      } catch (e) {}
+    };
+
+    const Icon = ({ name, className }) => {
+      const icons = {
+        Activity: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
+        Play: <svg className={className} viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
+        Trophy: <svg className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>,
+        Clock: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>,
+        CheckCircle: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
+        XCircle: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>,
+        VolumeX: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>,
+        AlertCircle: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>,
+        ChevronUp: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>,
+        ChevronDown: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      };
+      return icons[name] || null;
+    };
+
+    function App() {
+      const [appState, setAppState] = useState('loading'); 
+      const [config, setConfig] = useState(null);
+      const [questions, setQuestions] = useState([]);
+      const [formData, setFormData] = useState({ name: '' });
+      const [preQuizAnswers, setPreQuizAnswers] = useState({});
+      const [currentQIndex, setCurrentQIndex] = useState(0);
+      const [score, setScore] = useState(0);
+      const [timeLeft, setTimeLeft] = useState(0);
+      const [selectedAnswers, setSelectedAnswers] = useState([]); 
+      const [orderItems, setOrderItems] = useState([]); 
+      const [isCorrect, setIsCorrect] = useState(false);
+      const [isSoundMuted, setIsSoundMuted] = useState(false);
+
+      useEffect(() => {
+        if (typeof google === 'undefined') {
+          setConfig({ 
+              themeColor: '#0ea5e9', bgMain: '#0f172a', textMain: '#f8fafc', optionBg: '#1e293b', optionHover: '#312e81',
+              totalMaxScore: 500, ranks: [{ title: "Maestro", min: 0.85, level: 1 }, { title: "Beginner", min: 0, level: 4 }], preQuizQuestions: []
+          });
+          setQuestions([{ id: 1, type: 'single', time: 15, points: 100, correctAnswers: [2], question: "Cleaning Tool?", options: [{id:1, text:"SUM"},{id:2, text:"TRIM"}] }]);
+          setAppState('nameInput');
+          return;
+        }
+
+        google.script.run.withSuccessHandler((res) => {
+            try {
+              const data = JSON.parse(res);
+              setConfig(data.config);
+              setQuestions(data.questions);
+              
+              const rootStyle = document.documentElement.style;
+              if (data.config.themeColor) rootStyle.setProperty('--theme-color', data.config.themeColor);
+              if (data.config.bgMain) rootStyle.setProperty('--bg-main', data.config.bgMain);
+              if (data.config.textMain) rootStyle.setProperty('--text-main', data.config.textMain);
+              if (data.config.optionBg) rootStyle.setProperty('--option-bg', data.config.optionBg);
+              if (data.config.optionHover) rootStyle.setProperty('--option-hover', data.config.optionHover);
+
+              setAppState('nameInput'); 
+            } catch (e) { setAppState('serverError'); }
+          }).withFailureHandler(() => setAppState('serverError')).getAppConfig();
+      }, []);
+
+      useEffect(() => {
+        let timer;
+        if (appState === 'playing' && timeLeft > 0) {
+          if (!isSoundMuted && timeLeft <= 10) playTickSound(timeLeft <= 5);
+          timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+        } else if (appState === 'playing' && timeLeft === 0) handleTimeOut();
+        return () => clearTimeout(timer);
+      }, [appState, timeLeft, isSoundMuted]);
+
+      const handleNameSubmit = (e) => {
+        e.preventDefault();
+        if (formData.name.trim() !== '') {
+          if (config.preQuizQuestions && config.preQuizQuestions.length > 0) setAppState('preQuiz');
+          else setAppState('start');
+        }
+      };
+
+      const handlePreQuizSubmit = (e) => { e.preventDefault(); setAppState('start'); };
+
+      const startGame = () => {
+        if (!questions || questions.length === 0) return alert("No questions available.");
+        setAppState('playing'); setCurrentQIndex(0); setScore(0); setupQuestionState(questions[0]);
+      };
+
+      const setupQuestionState = (q) => {
+        setTimeLeft(q.time || 20);
+        setSelectedAnswers([]);
+        if (q.type === 'order') {
+          const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+          setOrderItems(shuffled);
+        }
+      };
+
+      const toggleAnswerSelection = (id) => {
+        const q = questions[currentQIndex];
+        if (q.type === 'single' || q.type === 'true_false') {
+          setSelectedAnswers([id]); submitAnswer([id]); 
+        } else if (q.type === 'multiple') {
+          if(selectedAnswers.includes(id)) setSelectedAnswers(selectedAnswers.filter(a => a !== id));
+          else setSelectedAnswers([...selectedAnswers, id]);
+        }
+      };
+
+      const moveItem = (index, direction) => {
+        const newItems = [...orderItems];
+        if (direction === 'up' && index > 0) {
+          [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+          setOrderItems(newItems);
+        } else if (direction === 'down' && index < newItems.length - 1) {
+          [newItems[index + 1], newItems[index]] = [newItems[index], newItems[index + 1]];
+          setOrderItems(newItems);
+        }
+      };
+
+      const confirmAnswer = () => {
+        const q = questions[currentQIndex];
+        if (q.type === 'multiple') submitAnswer(selectedAnswers);
+        else if (q.type === 'order') submitAnswer(orderItems.map(item => item.id));
+      };
+
+      const submitAnswer = (userAnswersArray) => {
+        if (appState !== 'playing') return;
+        const q = questions[currentQIndex];
+        let correct = false;
+
+        if (q.type === 'order') {
+          const correctOrder = q.correctOrder || [];
+          correct = userAnswersArray.length === correctOrder.length && userAnswersArray.every((val, i) => val === correctOrder[i]);
+        } else {
+          const sortedUser = [...userAnswersArray].sort();
+          const sortedCorrect = [...(q.correctAnswers || [])].sort();
+          correct = sortedUser.length === sortedCorrect.length && sortedUser.every((val, i) => val === sortedCorrect[i]);
+        }
+
+        setIsCorrect(correct); setAppState('feedback');
+        if (correct) {
+          const earned = Math.round((timeLeft / (q.time || 20)) * ((q.points || 100) / 2) + ((q.points || 100) / 2));
+          setScore(prev => prev + earned);
+        }
+        setTimeout(() => moveToNextQuestion(), 1500);
+      };
+
+      const handleTimeOut = () => { setIsCorrect(false); setAppState('feedback'); setTimeout(() => moveToNextQuestion(), 1500); };
+
+      const moveToNextQuestion = () => {
+        if (currentQIndex < questions.length - 1) {
+          const nextQ = questions[currentQIndex + 1];
+          setCurrentQIndex(currentQIndex + 1);
+          setupQuestionState(nextQ);
+          setAppState('playing');
+        } else finishGame();
+      };
+
+      const finishGame = () => {
+        setAppState('end');
+        const percentage = score / (config?.totalMaxScore || 1);
+        const rankObj = config?.ranks?.find(r => percentage >= r.min) || config?.ranks?.[config.ranks.length - 1];
+        const resultData = { name: formData.name, preQuiz: preQuizAnswers, score: score, maxScore: config?.totalMaxScore || 0, rank: rankObj ? rankObj.title : "Participant" };
+        if (typeof google !== 'undefined') google.script.run.submitParticipantResult(JSON.stringify(resultData));
+      };
+
+      if (appState === 'serverError') return (
+        <div className="min-h-screen flex flex-col items-center justify-center animate-zoom p-6 text-center">
+          <Icon name="AlertCircle" className="w-24 h-24 text-rose-500 mb-6" />
+          <h2 className="text-3xl font-black mb-4">Server Connection Failed</h2>
+          <button onClick={() => window.location.reload()} className="text-white font-bold py-4 px-10 rounded-xl shadow-lg mt-6" style={{backgroundColor: 'var(--theme-color)'}}>Refresh Page</button>
+        </div>
+      );
+
+      if (appState === 'nameInput') return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 animate-zoom relative overflow-hidden">
+          <div className="absolute top-[-10%] left-[-10%] w-64 h-64 rounded-full blur-[100px] opacity-20" style={{backgroundColor: 'var(--theme-color)'}}></div>
+          <form onSubmit={handleNameSubmit} className="backdrop-blur-xl p-8 md:p-12 rounded-[2rem] border border-white/10 w-full max-w-md shadow-2xl relative z-10" style={{backgroundColor: 'var(--option-bg)'}}>
+            <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner border border-white/10 transform rotate-12" style={{backgroundColor: 'var(--bg-main)'}}>
+              <Icon name="Activity" className="w-12 h-12 -rotate-12" style={{color: 'var(--theme-color)'}} />
+            </div>
+            <h2 className="text-3xl font-black mb-3 text-center" style={{color: 'var(--theme-color)'}}>Welcome!</h2>
+            <p className="opacity-70 text-center mb-8">Enter your name to join the interactive challenge</p>
+            <input type="text" placeholder="Full Name..." required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full text-center p-5 rounded-2xl text-white border border-white/20 outline-none focus:border-[var(--theme-color)] focus:ring-1 focus:ring-[var(--theme-color)] text-xl font-bold mb-8 transition-all" style={{backgroundColor: 'var(--bg-main)'}} />
+            <button type="submit" className="w-full text-white font-black text-xl py-5 rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.2)] transition-transform active:scale-95" style={{backgroundColor: 'var(--theme-color)'}}>Continue</button>
+          </form>
+        </div>
+      );
+
+      if (appState === 'preQuiz') return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 animate-zoom relative">
+          <form onSubmit={handlePreQuizSubmit} className="p-8 md:p-10 rounded-[2rem] border border-white/10 w-full max-w-xl shadow-2xl z-10" style={{backgroundColor: 'var(--option-bg)'}}>
+            <h2 className="text-2xl font-black mb-6 text-center" style={{color: 'var(--theme-color)'}}>Pre-Quiz Questions</h2>
+            <div className="space-y-6 mb-8 max-h-[50vh] overflow-y-auto pr-2">
+              {config.preQuizQuestions.map((pq, i) => (
+                <div key={pq.id} className="p-5 rounded-2xl border border-white/5" style={{backgroundColor: 'var(--bg-main)'}}>
+                  <label className="block font-bold mb-3 text-lg">{i+1}. {pq.label}</label>
+                  {pq.type === 'select' ? (
+                    <select required={pq.required} onChange={(e) => setPreQuizAnswers({...preQuizAnswers, [pq.id]: e.target.value})} className="w-full p-4 rounded-xl border border-white/10 text-white outline-none focus:border-[var(--theme-color)]" style={{backgroundColor: 'var(--option-bg)'}}>
+                      <option value="">-- Select an option --</option>
+                      {pq.options && pq.options.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input type="text" required={pq.required} placeholder="Your answer here..." onChange={(e) => setPreQuizAnswers({...preQuizAnswers, [pq.id]: e.target.value})} className="w-full p-4 rounded-xl border border-white/10 text-white outline-none focus:border-[var(--theme-color)]" style={{backgroundColor: 'var(--option-bg)'}} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <button type="submit" className="w-full text-white font-black text-xl py-5 rounded-2xl shadow-lg transition-transform active:scale-95" style={{backgroundColor: 'var(--theme-color)'}}>Proceed to Quiz</button>
+          </form>
+        </div>
+      );
+
+      if (appState === 'start') return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-zoom">
+          <h1 className="text-4xl md:text-6xl font-black mb-6">Ready, <span style={{color: 'var(--theme-color)'}}>{formData.name}</span>?</h1>
+          <p className="text-xl opacity-80 mb-12 max-w-lg leading-relaxed">
+            You have <strong className="text-white px-3 py-1 rounded-md" style={{backgroundColor: 'var(--option-bg)'}}>{questions.length} questions</strong>. The quiz includes Multiple Choice, True/False, and Ordering questions. Faster answers earn higher points!
+          </p>
+          <button onClick={startGame} className="text-white font-black text-3xl py-6 px-14 rounded-full transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-4" style={{backgroundColor: 'var(--theme-color)'}}>
+            <Icon name="Play" className="w-8 h-8" /> Start Challenge
+          </button>
+          <button onClick={() => setIsSoundMuted(!isSoundMuted)} className="mt-10 opacity-50 hover:opacity-100 flex items-center gap-2 px-6 py-2 rounded-full transition-all" style={{backgroundColor: 'var(--option-bg)'}}>
+            <Icon name="VolumeX" className="w-5 h-5" /> {isSoundMuted ? "Sound Muted" : "Mute Sounds"}
+          </button>
+        </div>
+      );
+
+      if (appState === 'end') {
+        const percentage = score / (config?.totalMaxScore || 1);
+        const rankObj = config?.ranks?.find(r => percentage >= r.min) || config?.ranks?.[config?.ranks?.length - 1];
+        return (
+          <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-zoom">
+            <Icon name="Trophy" className="w-28 h-28 mb-8 text-yellow-500 animate-bounce" />
+            <h2 className="text-2xl font-bold mb-4 opacity-80">Great job! Your result has been saved.</h2>
+            <h1 className="text-7xl md:text-8xl font-black mb-4 drop-shadow-lg" style={{color: 'var(--theme-color)'}}>{score}</h1>
+            <p className="text-xl font-bold mb-10 opacity-70">Out of {config?.totalMaxScore || 0} points</p>
+            
+            <div className="px-12 py-8 rounded-[2rem] mb-10 border border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-sm" style={{backgroundColor: 'var(--option-bg)'}}>
+              <div className="absolute inset-0 opacity-10" style={{backgroundColor: 'var(--theme-color)'}}></div>
+              <p className="opacity-70 mb-3 relative z-10 font-bold">Earned Rank</p>
+              <p className="text-4xl md:text-5xl font-black text-white relative z-10">{rankObj?.title}</p>
+            </div>
+            
+            <p className="text-emerald-400 font-bold flex items-center gap-2 bg-emerald-900/30 px-6 py-3 rounded-full border border-emerald-800 shadow-sm"><Icon name="CheckCircle" className="w-6 h-6"/> You can now return to the trainer</p>
+          </div>
+        );
+      }
+
+      if (!questions || questions.length === 0) return null;
+      const q = questions[currentQIndex];
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans relative">
+          <div className="p-4 md:p-5 shadow-lg flex justify-between items-center border-b border-white/10 z-20" style={{backgroundColor: 'var(--bg-main)'}}>
+            <div className="px-5 py-2.5 rounded-xl font-black flex items-center gap-3 border border-white/5 shadow-inner text-white" style={{backgroundColor: 'var(--option-bg)'}}>
+              <span className="opacity-60 text-sm hidden md:inline">Points:</span> <span className="text-xl" style={{color: 'var(--theme-color)'}}>{score}</span>
+            </div>
+            <div className="flex items-center gap-4">
+               <button onClick={() => setIsSoundMuted(!isSoundMuted)} className="opacity-50 hover:opacity-100 p-2 rounded-lg border border-white/5" style={{backgroundColor: 'var(--option-bg)'}}><Icon name="VolumeX" className="w-5 h-5" /></button>
+               <div className="font-bold px-5 py-2.5 rounded-xl border border-white/5 shadow-inner text-white" style={{backgroundColor: 'var(--option-bg)'}}>
+                 Question <span className="text-xl mx-1" style={{color: 'var(--theme-color)'}}>{currentQIndex + 1}</span> <span className="opacity-50">/ {questions.length}</span>
+               </div>
+            </div>
+          </div>
+
+          <div className="p-6 md:p-12 flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+            <div className={`absolute top-6 left-6 w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center font-black text-2xl md:text-3xl border-2 transition-all z-10 ${timeLeft <= 5 ? 'bg-rose-500/20 text-rose-500 border-rose-500 animate-pulse animate-shake' : 'text-white border-white/10 backdrop-blur-md'}`} style={{backgroundColor: timeLeft > 5 ? 'var(--option-bg)' : undefined}}>
+              {timeLeft}
+            </div>
+            <div className="absolute top-6 right-6 backdrop-blur-md text-white px-5 py-2.5 rounded-full font-bold text-xs md:text-sm border border-white/10 shadow-lg z-10" style={{backgroundColor: 'var(--option-bg)'}}>
+              {q.type === 'multiple' ? 'Select multiple answers (then confirm)' : (q.type === 'order' ? 'Order the following options correctly' : (q.type === 'true_false' ? 'True or False' : 'Select one answer'))}
+            </div>
+            <h2 className="text-2xl md:text-4xl lg:text-5xl font-black text-center leading-[1.6] max-w-4xl mt-16 md:mt-0 drop-shadow-md text-white relative z-10">{q.question}</h2>
+          </div>
+
+          {appState === 'feedback' && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center backdrop-blur-xl opacity-95 animate-zoom" style={{backgroundColor: 'var(--bg-main)'}}>
+              {selectedAnswers.length === 0 && q.type !== 'order' ? (
+                <div className="text-center animate-slide"><div className="bg-rose-500/20 p-8 rounded-full mb-6 inline-block border border-rose-500/50"><Icon name="Clock" className="w-24 h-24 text-rose-500" /></div><h1 className="text-6xl font-black text-rose-500">Time's up!</h1></div>
+              ) : isCorrect ? (
+                <div className="text-center animate-slide"><div className="bg-emerald-500/20 p-8 rounded-full mb-6 inline-block border border-emerald-500/50"><Icon name="CheckCircle" className="w-24 h-24 text-emerald-500" /></div><h1 className="text-6xl font-black text-emerald-500">Correct Answer!</h1></div>
+              ) : (
+                <div className="text-center animate-slide"><div className="bg-rose-500/20 p-8 rounded-full mb-6 inline-block border border-rose-500/50"><Icon name="XCircle" className="w-24 h-24 text-rose-500" /></div><h1 className="text-6xl font-black text-rose-500">Wrong Answer!</h1></div>
+              )}
+            </div>
+          )}
+
+          <div className="p-4 md:p-8 bg-black/20 backdrop-blur-md pb-12 border-t border-white/5">
+            <div className={`max-w-5xl mx-auto ${q.type !== 'order' ? 'grid gap-4 md:gap-6 grid-cols-1 ' + (q.type === 'true_false' ? 'md:grid-cols-2' : 'md:grid-cols-2') : 'flex flex-col gap-3'}`}>
+              
+              {q.type !== 'order' && q.options.map((opt, idx) => {
+                const isSelected = selectedAnswers.includes(opt.id);
+                return (
+                  <button key={idx} disabled={appState !== 'playing'} onClick={() => toggleAnswerSelection(opt.id)}
+                    className={`option-btn font-bold text-lg md:text-2xl leading-relaxed p-6 md:p-8 rounded-[1.5rem] transition-all text-left border-2 relative flex items-center min-h-[100px] ${isSelected ? 'selected transform -translate-y-2' : 'shadow-lg'}`}
+                  >
+                    {q.type === 'multiple' && (
+                      <div className={`absolute left-6 w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? 'border-white bg-white/20' : 'border-white/30'}`}>
+                        {isSelected && <Icon name="CheckCircle" className="w-5 h-5 text-white" />}
+                      </div>
+                    )}
+                    <span className={q.type === 'multiple' ? "ml-12 block" : ""}>{opt.text}</span>
+                  </button>
+                )
+              })}
+
+              {q.type === 'order' && orderItems.map((item, index) => (
+                <div key={item.id} className="option-btn p-4 md:p-6 rounded-[1.5rem] border-2 transition-all flex items-center justify-between shadow-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-xl border border-white/10 opacity-70" style={{backgroundColor: 'var(--bg-main)'}}>{index + 1}</div>
+                    <span className="font-bold text-lg md:text-xl">{item.text}</span>
+                  </div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <button disabled={appState !== 'playing' || index === 0} onClick={() => moveItem(index, 'up')} className="p-2 rounded-lg hover:text-white disabled:opacity-30 transition-colors border border-white/10" style={{backgroundColor: 'var(--bg-main)'}}><Icon name="ChevronUp" className="w-6 h-6" /></button>
+                    <button disabled={appState !== 'playing' || index === orderItems.length - 1} onClick={() => moveItem(index, 'down')} className="p-2 rounded-lg hover:text-white disabled:opacity-30 transition-colors border border-white/10" style={{backgroundColor: 'var(--bg-main)'}}><Icon name="ChevronDown" className="w-6 h-6" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {(q.type === 'multiple' || q.type === 'order') && (
+              <div className="max-w-5xl mx-auto mt-8 text-center animate-slide">
+                <button onClick={confirmAnswer} disabled={appState !== 'playing' || (q.type === 'multiple' && selectedAnswers.length === 0)}
+                  className="w-full md:w-auto min-w-[300px] text-white font-black text-2xl py-5 px-12 rounded-2xl transition-all shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 disabled:text-white/30 disabled:scale-100"
+                  style={{backgroundColor: ((q.type === 'multiple' && selectedAnswers.length > 0) || q.type === 'order') && appState === 'playing' ? 'var(--theme-color)' : 'var(--option-bg)'}}>
+                  Confirm Final Answer
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ErrorBoundary><App /></ErrorBoundary>);
+  </script>
+</body>
+</html>
